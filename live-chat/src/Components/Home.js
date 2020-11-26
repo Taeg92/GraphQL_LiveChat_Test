@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import { gql } from "apollo-boost";
 import { useMutation } from "react-apollo-hooks";
-
+import { findAllByTestId } from "@testing-library/react";
 const ENTER_ROOM = gql`
   mutation enterRoom(
     $nickname: String!
@@ -10,19 +10,21 @@ const ENTER_ROOM = gql`
     $lang: String!
     $code: String!
   ) {
-    enterRoom(nickname: $nickname, avatar: $avatar, lang: $lang, code: $code)
+    enterRoom(nickname: $nickname, avatar: $avatar, lang: $lang, code: $code) {
+      userId
+      roomId
+    }
   }
 `;
-
 const CREATE_ROOM = gql`
   mutation createRoom($nickname: String!, $avatar: String!, $lang: String!) {
     createRoom(nickname: $nickname, avatar: $avatar, lang: $lang) {
-      id
+      userId
+      roomId
       code
     }
   }
 `;
-
 const Home = () => {
   const history = useHistory();
   const [nickname, setNickname] = useState("");
@@ -30,7 +32,6 @@ const Home = () => {
   const [avatar, setAvatar] = useState("https://picsum.photos/200");
   const [code, setCode] = useState("");
   const [lang, setLang] = useState("");
-
   const [enterRoomMutation] = useMutation(ENTER_ROOM, {
     variables: {
       nickname,
@@ -39,7 +40,6 @@ const Home = () => {
       code,
     },
   });
-
   const [createRoomMutation] = useMutation(CREATE_ROOM, {
     variables: {
       nickname,
@@ -47,7 +47,6 @@ const Home = () => {
       lang,
     },
   });
-
   const handleNickname = (e) => {
     setNickname(e.target.value);
   };
@@ -60,8 +59,8 @@ const Home = () => {
   const handleCreateClick = async () => {
     const { data } = await createRoomMutation();
     history.push({
-      pathname: `/room/${data.createRoom.id}`,
-      state: { data, nickname, avatar, lang },
+      pathname: `/room/${data.createRoom.roomId}`,
+      state: { userId: data.createRoom.userId, code: data.createRoom.code, nickname, avatar, lang, isUnsubscribe: false },
     });
   };
 
@@ -75,13 +74,14 @@ const Home = () => {
   const enterRoomFunction = async () => {
     const { data } = await enterRoomMutation();
     history.push({
-      pathname: `/room/${data.enterRoom}`,
-      state: { data, nickname, avatar, lang },
+      pathname: `/room/${data.enterRoom.roomId}`,
+      state: { userId: data.enterRoom.userId, code, nickname, avatar, lang },
     });
   };
 
   useEffect(() => {
     if (!code) return;
+    console.log(nickname, avatar, lang);
     enterRoomFunction();
     return () => {
       setCode("");
@@ -102,5 +102,4 @@ const Home = () => {
     </>
   );
 };
-
 export default Home;

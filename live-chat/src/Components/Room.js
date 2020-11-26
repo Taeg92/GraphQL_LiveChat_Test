@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import { gql } from "apollo-boost";
 import { useMutation } from "react-apollo-hooks";
 import { Query } from "react-apollo";
@@ -13,6 +13,7 @@ const ALL_CHAT_BY_ID = gql`
       user {
         id
         nickname
+        avatar
         lang
       }
     }
@@ -23,13 +24,13 @@ const CREATE_MESSAGE = gql`
   mutation createMessage(
     $text: String!
     $source: String!
-    $nickname: String!
+    $userId: Int!
     $roomId: Int!
   ) {
     createMessage(
       text: $text
       source: $source
-      nickname: $nickname
+      userId: $userId
       roomId: $roomId
     )
   }
@@ -44,31 +45,58 @@ const NEW_MESSAGE = gql`
       user {
         id
         nickname
+        avatar
         lang
       }
     }
   }
 `;
 
-let unsubscribe = null;
+const DELETE_USER = gql`
+  mutation deleteUser($roomId: Int!, $userId: Int!) {
+    deleteUser(roomId: $roomId, userId: $userId)
+  }
+`;
+
+var unsubscribe = null;
 
 const Room = ({ match }) => {
+  const history = useHistory();
   const location = useLocation();
-  const { data: roomInfo, nickname, avatar, lang } = location.state;
+  const { userId, code, nickname, avatar, lang, isUnsubscribe } = location.state;
   const roomId = parseInt(match.params.id);
   const [text, setText] = useState("");
-
+  
   const [mutation] = useMutation(CREATE_MESSAGE, {
     variables: {
-      nickname,
+      userId,
       text,
       source: lang,
       roomId,
     },
   });
+  
+  const [deleteUserMutation] = useMutation(DELETE_USER, {
+    variables: {
+      roomId,
+      userId,
+    }
+  });
 
+  const handleDeleteClick = async () => {
+    const { data } = await deleteUserMutation();
+    if (data.deleteUser) {
+      unsubscribe = null;
+      history.push('/');
+    } else {
+      console.log('Error')
+    }
+  };
+  
   return (
     <>
+      <h1>Room Code: {code}</h1>
+      <button onClick={handleDeleteClick}>나가기</button>
       <Query query={ALL_CHAT_BY_ID} variables={{ id: roomId }}>
         {({ loading, data, subscribeToMore }) => {
           if (loading) {
