@@ -5,8 +5,8 @@ import { useMutation } from "react-apollo-hooks";
 import { Query } from "react-apollo";
 
 const ALL_CHAT_BY_ID = gql`
-  query allChatById($id: Int!) {
-    allChatById(id: $id) {
+  query allMessagesById($id: Int!) {
+    allMessagesById(id: $id) {
       id
       text
       source
@@ -37,8 +37,8 @@ const CREATE_MESSAGE = gql`
 `;
 
 const NEW_MESSAGE = gql`
-  subscription($roomId: Int!) {
-    newMessage(roomId: $roomId) {
+  subscription($roomId: Int!, $lang: String!) {
+    newMessage(roomId: $roomId, lang: $lang) {
       id
       text
       source
@@ -63,10 +63,17 @@ var unsubscribe = null;
 const Room = ({ match }) => {
   const history = useHistory();
   const location = useLocation();
-  const { userId, code, nickname, avatar, lang, isUnsubscribe } = location.state;
+  const {
+    userId,
+    code,
+    nickname,
+    avatar,
+    lang,
+    isUnsubscribe,
+  } = location.state;
   const roomId = parseInt(match.params.id);
   const [text, setText] = useState("");
-  
+
   const [mutation] = useMutation(CREATE_MESSAGE, {
     variables: {
       userId,
@@ -75,24 +82,24 @@ const Room = ({ match }) => {
       roomId,
     },
   });
-  
+
   const [deleteUserMutation] = useMutation(DELETE_USER, {
     variables: {
       roomId,
       userId,
-    }
+    },
   });
 
   const handleDeleteClick = async () => {
     const { data } = await deleteUserMutation();
     if (data.deleteUser) {
       unsubscribe = null;
-      history.push('/');
+      history.push("/");
     } else {
-      console.log('Error')
+      console.log("Error");
     }
   };
-  
+
   return (
     <>
       <h1>Room Code: {code}</h1>
@@ -105,19 +112,19 @@ const Room = ({ match }) => {
           if (!unsubscribe) {
             unsubscribe = subscribeToMore({
               document: NEW_MESSAGE,
-              variables: { roomId },
+              variables: { roomId, lang },
               updateQuery: (prev, { subscriptionData }) => {
                 if (!subscriptionData.data) return prev;
                 const { newMessage } = subscriptionData.data;
                 return {
-                  allChatById: [...prev.allChatById, newMessage],
+                  allMessagesById: [...prev.allMessagesById, newMessage],
                 };
               },
             });
           }
           return (
             <div>
-              {data.allChatById.map((x) => (
+              {data.allMessagesById.map((x) => (
                 <h3 key={x.id}>
                   {x.user.nickname} : {x.text}
                 </h3>
