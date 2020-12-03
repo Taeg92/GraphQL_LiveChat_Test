@@ -124,11 +124,14 @@ const Room = ({ match }) => {
           }
           return (
             <div>
-              {data.allMessagesById.map((x) => (
-                <h3 key={x.id}>
-                  {x.user.nickname} : {x.text}
-                </h3>
-              ))}
+              {data.allMessagesById.map((x) => {
+                const obj = JSON.parse(x.text);
+                return (
+                  <h3 key={x.id}>
+                    {x.user.nickname} : {obj.translatedText}
+                  </h3>
+                );
+              })}
             </div>
           );
         }}

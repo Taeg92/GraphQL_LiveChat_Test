@@ -103,6 +103,7 @@ const Home = () => {
         <option value="">언어 선택</option>
         <option value="ko">ko</option>
         <option value="en">en</option>
+        <option value="ja">ja</option>
       </select>
       <button onClick={handleEnterClick}>대화 참여하기</button>
       <button onClick={handleCreateClick}>방 만들기</button>
